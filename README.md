@@ -1,286 +1,66 @@
-# SimpleWebRTC - World's easiest WebRTC lib
+# WiMNET WebRTC-analyzer
+### A simple video server app to measure and record performance metrics of webRTC calls
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/HenrikJoreteg/SimpleWebRTC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+Want to see it in action? Check out the demo: https://webrtc-wim.net
 
+## Getting started
+1. Install dependencies via `npm install`
 
-Want to see it in action? Check out the demo: https://simplewebrtc.com/demo.html
+2. Start video server: `node server.js`
 
+## Setting up an experiment
+#### Local
+To initiate a webRTC call, you need two clients. A client is simply a webRTC-compatible browser pointing to the URL where the server is running.
+Each client must be running on a machine with a webcam, or on a browser instance with a video file injected in place of a webcam.
+In local testing (one machine), this will be `localhost:8000` by default. If the browser is on a computer with a webcam, the app will query to access the webcam. Custom video files can also be injected, detailed in a later section.
 
-## It's so easy:
+In either client window, enter a room name, and click "create". This creates a 'room' which other clients can join by entering the same room name or entering the room URL into the browser.
+Room URLs follow this format: `localhost:8000/?<room_name>`
 
-### 1. Some basic html
+As soon as more than one client is in the room, a webRTC call begins, and the app begins recording call statistics. To save a call's trace, use the "log stats" button. This feature requires configuring a database, which is outlined in the database section.
 
-```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <script src="https://simplewebrtc.com/latest-v2.js"></script>
-        <style>
-            #remoteVideos video {
-                height: 150px;
-            }
-            #localVideo {
-                height: 150px;
-            }
-        </style>
-    </head>
-    <body>
-        <video id="localVideo"></video>
-        <div id="remoteVideos"></div>
-    </body>
-</html>
+#### Over a network
+To run experiments over a local network, the app must be running on a network-addressable location. This can be done within a LAN by using a web server such as Apache or NGINX to map incoming traffic on port 80 to the server machine's port 8000.
 
-```
+To run experiments over the internet, the app must be running on a publically reachable address, and a webserver is required for port-forwarding as it is in the LAN use case. A very simple way to achieve these steps at once is to use a service such as AWS Elastic Beanstalk, Google's Firebase, or any hosting service that allows you to upload and host a Node.js project.
+Our experiments utilized an ElasticBeanstalk Node.js deployment. See [their docs](http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_nodejs.html) for setup instructions.
 
-### 2. Create our WebRTC object
+NOTE: Most browsers require a HTTPS connection for webRTC calling by default.
+
+#### Setting up a database
+Out of the box, this app requires a database connection to log call stats. This app was built using a [Firebase](https://firebase.google.com/products/database/) Realtime Database instance.
+After creating a Firebase project (free tier worked just fine for our experimental purposes), you will be given a configuration script to paste into your webapp.
+In `charts.js`, replace the config object with the one Firebase gives you. It should look something like this:
 
 ```js
-var webrtc = new SimpleWebRTC({
-    // the id/element dom element that will hold "our" video
-    localVideoEl: 'localVideo',
-    // the id/element dom element that will hold remote videos
-    remoteVideosEl: 'remoteVideos',
-    // immediately ask for camera access
-    autoRequestMedia: true
-});
+  // Initialize Firebase
+  var config = {
+    apiKey: "<YOUR_API_KEY>",
+    authDomain: "<your-project>.firebaseapp.com",
+    databaseURL: "https://<your-project>.firebaseio.com",
+    projectId: "<your-project>",
+    storageBucket: "phidio-c8b8a.appspot.com",
+    messagingSenderId: "123456789"
+  };
 ```
 
-### 3. Tell it to join a room when ready
+## Running experiments
+#### Basic usage
+To run an experiment, simply add two clients to a room. The moment two clients join the same room, the call will begin and the app will begin recording stats. To record call stats, clicking 'log stats' will upload the call metrics to the database. The call will continue after clicking the 'log stats' button. A call ends when one of the clients leaves the room.
 
-```js
-// we have to wait until it's ready
-webrtc.on('readyToCall', function () {
-    // you can name it anything
-    webrtc.joinRoom('your awesome room name');
-});
-```
+#### Remote testing
+Clients on remote servers can be initiated using the `start-phidio.py` script provided in the `scripts` directory. The script can be run on any server that has both Google Chrome and Google's ChromeDriver installed. See https://sites.google.com/a/chromium.org/chromedriver/ for instructions.
+Assuming this remote server does not have a webcam, you will need to supply a local video file to inject into the chrome instance. In `start-phidio.py`, modify the `LOCAL_PATH_TO_VIDEO` variable to point to a local video file on the remote server. You will also need to modify the `APP_URL` variable to point to where your instance of this app is hosted.
+The script takes one command line argument, the room name. Run the script on the remote server as follows: `python start-phidio.py <room_name>`.
+This will boot an instance of chrome, inject the local video file into it for fake video capture, and point it to your instance of the app at the specified room name. If no room is specified, it will default to a room 'testroom'.
 
-### Available options
+To log stats remotely, add the `-log` flag on the command line. This will automatically 'click' the Log Stats button after 3 minutes, thus uploading call data from your remote server to the database.
 
+Executing this process on two remote machines will initiate a webRTC call between them. It can be fully monitored from another machine by simply navigating to that room URL from any other computer.
 
-`peerConnectionConfig` - Set this to specify your own STUN and TURN servers. By
-default, SimpleWebRTC uses Google's public STUN server
-(`stun.l.google.com:19302`), which is intended for public use according to:
-https://twitter.com/HenrikJoreteg/status/354105684591251456
+## Viewing and collecting experiment data
+All experimental results can be viewed in-browser via the `/charts` resource. i.e. in our demo app, this is at `https://webrtc-wim.net/charts`. All calls can be viewed using the dropdown selector. It may take a moment for the call data to load from the database. Below the dropdown selector is a button to download the selected call's data in JSON format. A script to compute statistics on a given call's data is provided in `scripts/get-call-stats.py`.
 
-Note that you will most likely also need to run your own TURN servers. See
-http://www.html5rocks.com/en/tutorials/webrtc/infrastructure/ for a basic
-tutorial.
 
-## Filetransfer
-Sending files between individual participants is supported. See
-http://simplewebrtc.com/filetransfer.html for a demo.
+This experimental tool was built using the [SimpleWebRTC](https://github.com/andyet/SimpleWebRTC) library.
 
-Note that this is not file sharing between a group which requires a completely
-different approach.
-
-## It's not always that simple...
-
-Sometimes you need to do more advanced stuff. See
-http://simplewebrtc.com/notsosimple.html for some examples.
-
-## Got questions?
-
-Join the SimpleWebRTC discussion list:
-
-http://lists.andyet.com/mailman/listinfo/simplewebrtc
-
-or the Gitter channel:
-
-https://gitter.im/HenrikJoreteg/SimpleWebRTC
-
-## API
-
-### Constructor
-
-`new SimpleWebRTC(options)`
-
-- `object options` - options object provided to constructor consisting of:
-  - `string url` - *required* url for signaling server. Defaults to signaling
-  server URL which can be used for development. You must use your own signaling
-  server for production.
-  - `object socketio` - *optional* object to be passed as options to the signaling
-  server connection.
-  - `Connection connection` - *optional* connection object for signaling. See
-  `Connection` below. Defaults to a new SocketIoConnection
-  - `bool debug` - *optional* flag to set the instance to debug mode
-  - `[string|DomElement] localVideoEl` - ID or Element to contain the local video
-  element
-  - `[string|DomElement] remoteVideosEl` - ID or Element to contain the
-  remote video elements
-  - `bool autoRequestMedia` - *optional(=false)* option to automatically request
-  user media. Use `true` to request automatically, or `false` to request media
-  later with `startLocalVideo`
-  - `bool enableDataChannels` *optional(=true)* option to enable/disable data
-  channels (used for volume levels or direct messaging)
-  - `bool autoRemoveVideos` - *optional(=true)* option to automatically remove
-  video elements when streams are stopped.
-  - `bool adjustPeerVolume` - *optional(=false)* option to reduce peer volume
-  when the local participant is speaking
-  - `number peerVolumeWhenSpeaking` - *optional(=.0.25)* value used in
-  conjunction with `adjustPeerVolume`. Uses values between 0 and 1.
-  - `object media` - media options to be passed to `getUserMedia`. Defaults to
-  `{ video: true, audio: true }`. Valid configurations described
-  [on MDN](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)
-  with official spec
-  [at w3c](http://w3c.github.io/mediacapture-main/#dom-mediadevices-getusermedia).
-  - `object receiveMedia` - *optional* RTCPeerConnection options. Defaults to
-  `{ offerToReceiveAudio: 1, offerToReceiveVideo: 1 }`.
-  - `object localVideo` - *optional* options for attaching the local video
-  stream to the page. Defaults to
-  ```javascript
-  {
-      autoplay: true, // automatically play the video stream on the page
-      mirror: true, // flip the local video to mirror mode (for UX)
-      muted: true // mute local video stream to prevent echo
-  }
-  ```
-  - `object logger` - *optional* alternate logger for the instance; any object
-  that implements `log`, `warn`, and `error` methods.
-
-### Fields
-
-`capabilities` - the
-[`webrtcSupport`](https://github.com/HenrikJoreteg/webrtcsupport) object that
-describes browser capabilities, for convenience
-
-`config` - the configuration options extended from options passed to the
-constructor
-
-`connection` - the socket (or alternate) signaling connection
-
-`webrtc` - the underlying WebRTC session manager
-
-### Events
-
-To set up event listeners, use the SimpleWebRTC instance created with the
-constructor. Example:
-
-```javascript
-var webrtc = new SimpleWebRTC(options);
-webrtc.on('connectionReady', function (sessionId) {
-    // ...
-})
-```
-
-`'connectionReady', sessionId` - emitted when the signaling connection emits the
-`connect` event, with the unique id for the session.
-
-`'createdPeer', peer` - emitted three times:
-
-- when joining a room with existing peers, once for each peer
-- when a new peer joins a joined room
-- when sharing screen, once for each peer
-
-- `peer` - the object representing the peer and underlying peer connection
-
-`'stunservers', [...args]` - emitted when the signaling connection emits the
-same event
-
-`'turnservers', [...args]` - emitted when the signaling connection emits the
-same event
-
-`'localScreenAdded', el` - emitted after triggering the start of screen sharing
-
-- `el` the element that contains the local screen stream
-
-`'leftRoom', roomName` - emitted after successfully leaving the current room,
-ending all peers, and stopping the local screen stream
-
-`'videoAdded', videoEl, peer` - emitted when a peer stream is added
-
-- `videoEl` - the video element associated with the stream that was added
-- `peer` - the peer associated with the stream that was added
-
-`'videoRemoved', videoEl, peer` - emitted when a peer stream is removed
-
-- `videoEl` - the video element associated with the stream that was removed
-- `peer` - the peer associated with the stream that was removed
-
-### Methods
-
-`createRoom(name, callback)` - emits the `create` event on the connection with
-`name` and (if provided) invokes `callback` on response
-
-`joinRoom(name, callback)` - joins the conference in room `name`. Callback is
-invoked with `callback(err, roomDescription)` where `roomDescription` is yielded
-by the connection on the `join` event. See [signalmaster](https://github.com/andyet/signalmaster) for more details.
-
-`startLocalVideo()` - starts the local media with the `media` options provided
-in the config passed to the constructor
-
-`testReadiness()` - tests that the connection is ready and that (if media is
-enabled) streams have started
-
-`mute()` - mutes the local audio stream for all peers (pauses sending audio)
-
-`unmute()` - unmutes local audio stream for all peers (resumes sending audio)
-
-`pauseVideo()` - pauses sending video to peers
-
-`resumeVideo()` - resumes sending video to all peers
-
-`pause()` - pauses sending audio and video to all peers
-
-`resume()` - resumes sending audio and video to all peers
-
-`sendToAll(messageType, payload)` - broadcasts a message to all peers in the
-room via the signaling channel (websocket)
-
-- `string messageType` - the key for the type of message being sent
-- `object payload` - an arbitrary value or object to send to peers
-
-`sendDirectlyToAll(channelLabel, messageType, payload)` - broadcasts a message
-to all peers in the room via a dataChannel
-
-- `string channelLabel` - the label for the dataChannel to send on
-- `string messageType` - the key for the type of message being sent
-- `object payload` - an arbitrary value or object to send to peers
-
-`getPeers(sessionId, type)` - returns all peers by `sessionId` and/or `type`
-
-`shareScreen(callback)` - initiates screen capture request to browser, then
-adds the stream to the conference
-
-`getLocalScreen()` - returns the local screen stream
-
-`stopScreenShare()` - stops the screen share stream and removes it from the room
-
-`stopLocalVideo()` - stops all local media streams
-
-`setVolumeForAll(volume)` - used to set the volume level for all peers
-
-- `volume` - the volume level, between 0 and 1
-
-`leaveRoom()` - leaves the currently joined room and stops local screen share
-
-`disconnect()` - calls `disconnect` on the signaling connection and deletes it
-
-`handlePeerStreamAdded(peer)` - used internally to attach media stream to the
-DOM and perform other setup
-
-`handlePeerStreamRemoved(peer)` - used internally to remove the video container
-from the DOM and emit `videoRemoved`
-
-`getDomId(peer)` - used internally to get the DOM id associated with a peer
-
-`getEl(idOrEl)` - helper used internally to get an element where `idOrEl` is
-either an element, or an id of an element
-
-`getLocalVideoContainer()` - used internally to get the container that will hold
-the local video element
-
-`getRemoteVideoContainer()` - used internally to get the container that holds
-the remote video elements
-
-### Connection
-
-By default, SimpleWebRTC uses a [socket.io](http://socket.io/) connection to
-communicate with the signaling server. However, you can provide an alternate
-connection object to use. All that your alternate connection need provide are
-four methods:
-
-- `on(ev, fn)` - A method to invoke `fn` when event `ev` is triggered
-- `emit()` - A method to send/emit arbitrary arguments on the connection
-- `getSessionId()` - A method to get a unique session Id for the connection
-- `disconnect()` - A method to disconnect the connection

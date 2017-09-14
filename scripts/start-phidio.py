@@ -6,14 +6,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 
+APP_URL = 'https://www.webrtc-wim.net'
+LOCAL_PATH_TO_VIDEO = '/home/ubuntu/webrtc-tools/in_to_tree_420_720p50.y4m'
+
 def loadPage(driver, room):
     # Load page
-    driver.get('https://www.webrtc-wim.net/?' + room)
-
-    # Wait for the page to load and roulette btn to become visible
-    # WebDriverWait(driver, 15).until(
-        # EC.presence_of_element_located((By.CSS_SELECTOR, "#roulette")))
-
+    driver.get(APP_URL + '/?' + room)
 
 def joinConversation(driver, joinCall):
     # Click the 'Roulette btn' link
@@ -44,7 +42,7 @@ if __name__ == "__main__":
     chrome_options.add_argument("--use-fake-device-for-media-stream")
     chrome_options.add_argument("--use-fake-ui-for-media-stream")
     chrome_options.add_argument("--reduce-security-for-testing")
-    chrome_options.add_argument("--use-file-for-fake-video-capture=/home/ubuntu/webrtc-tools/in_to_tree_420_720p50.y4m")
+    chrome_options.add_argument("--use-file-for-fake-video-capture=" + LOCAL_PATH_TO_VIDEO)
     driver = webdriver.Chrome(chrome_options=chrome_options)
 
     try:
@@ -53,7 +51,6 @@ if __name__ == "__main__":
             loadPage(driver, 'testroom')
         else
             loadPage(driver, sys.argv[1])
-        # joinConversation(driver, True)
 
         if '-log' in arguments:
             logStats(driver)
