@@ -6,7 +6,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 
-APP_URL = 'https://www.webrtc-wim.net'
+APP_URL = 'https://mytestapp.elasticbeanstalk.com'
 LOCAL_PATH_TO_VIDEO = '/home/ubuntu/webrtc-tools/in_to_tree_420_720p50.y4m'
 
 def loadPage(driver, room):
