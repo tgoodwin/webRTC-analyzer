@@ -1,22 +1,17 @@
 # WiMNET WebRTC-analyzer
 ### A simple video server app to measure and record performance metrics of webRTC calls
 
-Want to see it in action? Check out the demo: https://webrtc-wim.net
-
 ## Getting started
-1. Install dependencies via `npm install`
 
-2. Start video server: `node server.js`
-
-### Setting up the WebRTC-Analyzer application
+### Setting up the WebRTC-Analyzer application server
 #### Installation instructions
 1. Clone or upload this repo to the host machine
 2. Install dependencies via `npm install`
 3. Start video server: `node server.js`
 
 ##### Configuring a hosting location
-To run experiments over the Internet, the app must be running on a publically reachable address, and a webserver such as Apache or NGINX is required to forward traffic from port 80 to the app. A very simple way to achieve these steps at once is to use a service such as AWS Elastic Beanstalk, Google's Firebase, or any hosting service that allows you to upload and host a Node.js project.
-Our experiments utilized an ElasticBeanstalk Node.js deployment. See [their docs](http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_nodejs.html) for setup instructions.
+To run experiments over the Internet, the app must be running on a publically reachable address, and a webserver such as Apache or NGINX is required to forward traffic from port 80 to the app. A very simple way to achieve these steps at once is to use an app hosting service such as AWS Elastic Beanstalk, Google's Firebase, or any hosting service that allows you to upload and host a Node.js project.
+Our experiments utilized an ElasticBeanstalk Node.js deployment. See [their docs](http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_nodejs.html) for setup instructions, which primarily involves uploading a zip archive of this repo to AWS.
 
 ##### Setting up the database
 Out of the box, this app requires a database connection to record call stats. This app was built using a [Firebase](https://firebase.google.com/products/database/) Realtime Database instance.
