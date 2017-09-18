@@ -1,10 +1,13 @@
-# WiMNET WebRTC-analyzer
-### A simple video server app to measure and record performance metrics of webRTC calls
+WebRTC-Analyzer
+===============
+A video calling application for the performance evaluation of WebRTC-based video conferencing. For more information, please read
 
-## Getting started
+_B. Jansen, T. Goodwin, V. Gupta, F. Kuipers, and G. Zussman, “Performance evaluation of WebRTC-based video conferencing,” in Proc. IFIP Performance’17 (to appear), 2017._
+
+## Getting Started
 
 ### Setting up the WebRTC-Analyzer application server
-#### Installation instructions
+#### Installation Instructions
 1. Clone or upload this repo to the host machine
 2. Install dependencies via `npm install`
 3. Start video server: `node server.js`
